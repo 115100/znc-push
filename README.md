@@ -1,7 +1,7 @@
 ## Building
 
 ```
-git clone http://git.jordanko.ch/eskimo/Igloo-Push.git
+git clone https://git.jordanko.ch/eskimo/Igloo-Push.git
 cd Igloo-Push
 znc-buildmod push.cpp
 ```
