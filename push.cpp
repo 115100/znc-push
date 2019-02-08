@@ -126,7 +126,7 @@ class CPushMod : public CModule
 			user = GetUser();
 
 			// Push service information
-			defaults["service"] = "";
+			defaults["service"] = "igloo";
 			defaults["username"] = "";
 			defaults["secret"] = "";
 			defaults["target"] = "";
