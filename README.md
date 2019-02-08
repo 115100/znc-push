@@ -1,18 +1,12 @@
 ## Building
 
-Without libcurl
 ```
 git clone https://git.jordanko.ch/eskimo/Igloo-Push.git
 cd Push
 make
 ```
 
-With libcurl
-```
-git clone https://git.jordanko.ch/eskimo/Igloo-Push.git
-cd Push
-make curl=yes
-```
+If you want to use libcurl replace `make` with `make curl=yes`
 
 ## Usage
 
