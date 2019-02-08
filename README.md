@@ -1,13 +1,13 @@
 ## Building
 
-#Without libcurl
+Without libcurl
 ```
 git clone https://git.jordanko.ch/eskimo/Igloo-Push.git
 cd Push
 make
 ```
 
-#With libcurl
+With libcurl
 ```
 git clone https://git.jordanko.ch/eskimo/Igloo-Push.git
 cd Push
