@@ -1,14 +1,22 @@
 ## Building
 
+#Without libcurl
 ```
 git clone https://git.jordanko.ch/eskimo/Igloo-Push.git
-cd Igloo-Push
-znc-buildmod push.cpp
+cd Push
+make
+```
+
+#With libcurl
+```
+git clone https://git.jordanko.ch/eskimo/Igloo-Push.git
+cd Push
+make curl=yes
 ```
 
 ## Usage
 
-`mv push.so ~/.znc/modules`
+`make install`
  
 Then on IRC
 
