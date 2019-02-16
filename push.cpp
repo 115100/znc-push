@@ -1316,7 +1316,7 @@ class CPushMod : public CModule
 			{
 				CString title = "Channel Notice";
 
-				send_message(message, title, channel.GetName(), nick);
+				send_message(message, title, channel.GetName(), nick, "notice");
 			}
 
 			return CONTINUE;
@@ -1370,7 +1370,7 @@ class CPushMod : public CModule
 			{
 				CString title = "Private Notice";
 
-				send_message(message, title, nick.GetNick(), nick);
+				send_message(message, title, nick.GetNick(), nick, "notice");
 			}
 
 			return CONTINUE;
