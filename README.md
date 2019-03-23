@@ -1,7 +1,7 @@
 ## Building
 
 ```
-git clone https://git.jordanko.ch/eskimo/Igloo-Push.git
+git clone https://git.jordanko.ch/Igloo/Push.git
 cd Push
 make
 ```
