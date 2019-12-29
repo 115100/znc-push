@@ -1156,7 +1156,8 @@ class CPushMod : public CModule
 				return eval(expression, context, nick, message);
 			}
 
-			return away_only()
+			return !channel.IsDetached()
+				&& away_only()
 				&& client_count_less_than()
 				&& highlight(message)
 				&& idle()
@@ -1165,8 +1166,7 @@ class CPushMod : public CModule
 				&& nick_blacklist(nick)
 				&& network_blacklist()
 				&& replied(context)
-				&& context_filter(context)
-				&& true;
+				&& context_filter(context);
 		}
 
 		/**
