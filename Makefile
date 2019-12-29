@@ -1,16 +1,9 @@
 version = $(shell git describe --dirty || echo dev)
-curl=no
-
-ifneq ($(curl),no)
-	flags=-DUSE_CURL -lcurl
-else
-	flags=
-endif
 
 all: push.so
 
 push.so: push.cpp
-	CXXFLAGS="$(CXXFLAGS) -DPUSHVERSION=\"\\\"$(version)\\\"\" $(flags)" LIBS="$(LIBS) $(flags)" \
+	CXXFLAGS="$(CXXFLAGS) -DPUSHVERSION=\"\\\"$(version)\\\"\"" LIBS="$(LIBS)" \
 		 znc-buildmod push.cpp
 
 install: push.so

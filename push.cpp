@@ -23,9 +23,7 @@
 #include "time.h"
 #include <string.h>
 
-#ifdef USE_CURL
 #include <curl/curl.h>
-#endif // USE_CURL
 
 // Forward declaration
 class CPushMod;
@@ -41,46 +39,12 @@ CString urlencode(const CString& str)
 	return str.Escape_n(CString::EASCII, CString::EURL);
 }
 
-#ifndef USE_CURL
-/**
- * Socket class for generating HTTP requests.
- */
-class CPushSocket : public CSocket
-{
-	public:
-		CPushSocket(CModule *p) : CSocket(p)
-		{
-			EnableReadLine();
-			parent = (CPushMod*) p;
-			first = true;
-			crlf = "\r\n";
-			user_agent = "ZNC Push/" + CString(PUSHVERSION);
-		}
-
-		// Implemented after CPushMod
-		void Request(bool post, const CString& host, const CString& url, MCString& parameters, const CString& auth="");
-		virtual void ReadLine(const CString& data);
-		virtual void Disconnected();
-
-	private:
-		CPushMod *parent;
-		bool first;
-
-		// Too lazy to add CString("\r\n\") everywhere
-		CString crlf;
-
-		// User agent to use
-		CString user_agent;
-
-};
-#else
 // forward declaration
 long make_curl_request(const CString& service_host, const CString& service_url,
 						   const CString& service_auth, MCString& params, int port,
 						   bool use_ssl, bool use_post,
 						   const CString& proxy, bool proxy_ssl_verify,
 						   bool debug);
-#endif // USE_CURL
 
 /**
  * Push notification module.
@@ -114,9 +78,7 @@ class CPushMod : public CModule
 	public:
 
 		MODCONSTRUCTOR(CPushMod) {
-#ifdef USE_CURL
 			curl_global_init(CURL_GLOBAL_DEFAULT);
-#endif
 
 			app = "ZNC";
 
@@ -170,9 +132,7 @@ class CPushMod : public CModule
 		}
 
 		virtual ~CPushMod() {
-#ifdef USE_CURL
 			curl_global_cleanup();
-#endif
 		}
 
 	protected:
@@ -302,18 +262,11 @@ class CPushMod : public CModule
 			params["device3"] = options["device3"];
 			params["device4"] = options["device4"];
 			params["device5"] = options["device5"];
-#ifdef USE_CURL
+
 			long http_code = make_curl_request(service_host, service_url, service_auth, params, use_port, use_ssl, use_post, options["proxy"], options["proxy_ssl_verify"] != "no", false);
 			if (!(http_code >= 200 && http_code < 300)) {
 				PutModule("Error: HTTP status code " + CString(http_code));
 			}
-#else
-			// Create the socket connection, write to it, and add it to the queue
-			CPushSocket *sock = new CPushSocket(this);
-			sock->Connect(service_host, use_port, use_ssl);
-			sock->Request(use_post, service_host, service_url, params, service_auth);
-			AddSocket(sock);
-#endif
 		}
 
 		/**
@@ -1286,18 +1239,10 @@ class CPushMod : public CModule
 				CString service_auth;
 				MCString params;
 
-#ifdef USE_CURL
 				long http_code = make_curl_request(service_host, service_url, service_auth, params, use_port, use_ssl, use_post, options["proxy"], options["proxy_ssl_verify"] != "no", false);
 				if (!(http_code >= 200 && http_code < 300)) {
 					PutModule("Error: HTTP status code " + CString(http_code));
 				}
-#else
-				// Create the socket connection, write to it, and add it to the queue
-				CPushSocket *sock = new CPushSocket(this);
-				sock->Connect(service_host, use_port, use_ssl);
-				sock->Request(use_post, service_host, service_url, params, service_auth);
-				AddSocket(sock);
-#endif
 
 				PutModule("Ok");
 			}
@@ -1363,7 +1308,6 @@ CString build_query_string(MCString& params)
 	return query;
 }
 
-#ifdef USE_CURL
 /**
  * Send an HTTP request using libcurl.
  *
@@ -1441,76 +1385,6 @@ long make_curl_request(const CString& service_host, const CString& service_url,
 
 	return http_code;
 }
-
-#else
-
-/**
- * Send an HTTP request.
- *
- * @param post POST command
- * @param host Host domain
- * @param url Resource path
- * @param parameters Query parameters
- * @param auth Basic authentication string
- */
-void CPushSocket::Request(bool post, const CString& host, const CString& url, MCString& parameters, const CString& auth)
-{
-	CString query = build_query_string(parameters);
-
-	// Request headers and POST body
-	CString request;
-
-	if (post)
-	{
-		request += "POST " + url + " HTTP/1.1" + crlf;
-		request += "Content-Type: application/x-www-form-urlencoded" + crlf;
-		request += "Content-Length: " + CString(query.length()) + crlf;
-	}
-	else
-	{
-		request += "GET " + url + "?" + query + " HTTP/1.1" + crlf;
-	}
-
-	request += "Host: " + host + crlf;
-	request += "Connection: close" + crlf;
-	request += "User-Agent: " + user_agent + crlf;
-
-	if (auth != "")
-	{
-		CString auth_b64 = auth.Base64Encode_n();
-		request += "Authorization: Basic " + auth_b64 + crlf;
-	}
-
-	request += crlf;
-
-	if (post)
-	{
-		request += query;
-	}
-
-
-	Write(request);
-}
-
-/**
- * Read each line of data returned from the HTTP request.
- */
-void CPushSocket::ReadLine(const CString& data)
-{
-	if (first)
-	{
-		CString status = data.Token(1);
-		CString message = data.Token(2, true);
-
-		first = false;
-	}
-}
-
-void CPushSocket::Disconnected()
-{
-	Close(CSocket::CLT_AFTERWRITE);
-}
-#endif // USE_CURL
 
 template<> void TModInfo<CPushMod>(CModInfo& Info) {
 	Info.AddType(CModInfo::UserModule);
