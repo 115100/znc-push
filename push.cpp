@@ -126,7 +126,6 @@ class CPushMod : public CModule
 			user = GetUser();
 
 			// Push service information
-			defaults["service"] = "igloo";
 			defaults["username"] = "";
 			defaults["secret"] = "";
 			defaults["target"] = "";
@@ -273,7 +272,6 @@ class CPushMod : public CModule
 			CString message_content = expand(options["message_content"], replace);
 
 			// Set up the connection profile
-			CString service = options["service"];
 			bool use_post = true;
 			int use_port = 443;
 			bool use_ssl = true;
@@ -282,484 +280,28 @@ class CPushMod : public CModule
 			CString service_auth;
 			MCString params;
 
-			// Service-specific profiles
-			if (service == "pushbullet")
+			if (options["device1"] == "" && options["device2"] == "" && options["device3"] == "" && options["device4"] == "" && options["device5"] == "")
 			{
-				if (options["secret"] == "")
-				{
-					PutModule("Error: secret (api key) not set");
-					return;
-				}
-
-				service_host = "api.pushbullet.com";
-				service_url = "/v2/pushes";
-
-				// BASIC auth, base64-encoded APIKey:
-				service_auth = options["secret"] + CString(":");
-
-				if (options["target"] != "")
-				{
-					params["device_iden"] = options["target"];
-				}
-
-				if (message_uri == "")
-				{
-					params["type"] = "note";
-				} else {
-					params["type"] = "link";
-					params["url"] = message_uri;
-				}
-				params["title"] = message_title;
-				params["body"] = message_content;
-			}
-			else if (service == "boxcar")
-			{
-				if (options["username"] == "")
-				{
-					PutModule("Error: username not set");
-					return;
-				}
-
-				CString boxcar_api_key = "puSd2qp2gCDZO7nWkvb9";
-				CString boxcar_api_secret = "wLQQKSyGybIOkggbiKipefeYGLni9B3FPZabopHp";
-
-				service_host = "boxcar.io";
-				service_url = "/devices/providers/" + boxcar_api_key + "/notifications";
-
-				params["email"] = options["username"];
-				params["notification[from_screen_name]"] = context;
-				params["notification[message]"] = message_content;
-				params["notification[source_url]"] = message_uri;
-			}
-			else if (service == "boxcar2")
-			{
-				if (options["secret"] == "")
-				{
-					PutModule("Error: secret not set to apikey");
-					return;
-				}
-
-				service_host = "new.boxcar.io";
-				service_url = "/api/notifications";
-
-				params["user_credentials"] = options["secret"];
-				params["notification[title]"] = message_title;
-				params["notification[long_message]"] = message_content;
-				if ( options["message_sound"] != "" )
-				{
-					params["notification[sound]"] = options["message_sound"];
-				}
-			}
-			else if (service == "nma")
-			{
-				if (options["secret"] == "")
-				{
-					PutModule("Error: secret not set");
-					return;
-				}
-				if (options["message_priority"] != "")
-				{
-					params["priority"] = options["message_priority"];
-				}
-
-				service_host = "www.notifymyandroid.com";
-				service_url = "/publicapi/notify";
-
-				params["apikey"] = options["secret"];
-				params["application"] = app;
-				params["event"] = message_title;
-				params["description"] = message_content;
-				params["url"] = message_uri;
-			}
-			else if (service == "pushover")
-			{
-				if (options["username"] == "")
-				{
-					PutModule("Error: username (user key) not set");
-					return;
-				}
-				if (options["secret"] == "")
-				{
-					PutModule("Error: secret (application token/key) not set");
-					return;
-				}
-
-				service_host = "api.pushover.net";
-				service_url = "/1/messages.json";
-
-				params["token"] = options["secret"];
-				params["user"] = options["username"];
-				params["title"] = message_title;
-				params["message"] = message_content;
-
-				if (message_uri != "")
-				{
-					params["url"] = message_uri;
-				}
-
-				if ( options["message_uri_title"] != "" )
-				{
-					params["url_title"] = options["message_uri_title"];
-				}
-
-				if (options["target"] != "")
-				{
-					params["device"] = options["target"];
-				}
-
-				if ( options["message_sound"] != "" )
-				{
-					params["sound"] = options["message_sound"];
-				}
-
-				if (options["message_priority"] != "")
-				{
-					params["priority"] = options["message_priority"];
-				}
-			}
-			else if (service == "pushsafer")
-			{
-				if (options["secret"] == "")
-				{
-					PutModule("Error: privatekey (private or alias key) not set");
-					return;
-				}
-
-				service_host = "pushsafer.com";
-				service_url = "/api";
-
-				params["k"] = options["secret"];
-				params["t"] = message_title;
-				params["m"] = message_content;
-
-				if (message_uri != "")
-				{
-					params["u"] = message_uri;
-				}
-
-				if (options["message_uri_title"] != "" )
-				{
-					params["ut"] = options["message_uri_title"];
-				}
-
-				if (options["target"] != "")
-				{
-					params["d"] = options["target"];
-				}
-
-				if (options["message_sound"] != "" )
-				{
-					params["s"] = options["message_sound"];
-				}
-
-			}
-			else if (service == "pushalot")
-			{
-				if (options["secret"] == "")
-				{
-					PutModule("Error: secret (authorization token) not set");
-					return;
-				}
-
-				service_host = "pushalot.com";
-				service_url = "/api/sendmessage";
-
-				params["AuthorizationToken"] = options["secret"];
-				params["Title"] = message_title;
-				params["Body"] = message_content;
-
-				if (message_uri != "")
-				{
-					params["Link"] = message_uri;
-				}
-
-				if (options["message_uri_title"] != "" )
-				{
-					params["LinkTitle"] = options["message_uri_title"];
-				}
-			}
-			else if (service == "prowl")
-			{
-				if (options["secret"] == "")
-				{
-					PutModule("Error: secret not set");
-					return;
-				}
-
-				service_host = "api.prowlapp.com";
-				service_url = "/publicapi/add";
-
-				params["apikey"] = options["secret"];
-				params["application"] = app;
-				params["event"] = message_title;
-				params["description"] = message_content;
-				params["url"] = message_uri;
-			}
-			else if (service == "igloo")
-			{
-				if (options["device1"] == "" && options["device2"] == "" && options["device3"] == "" && options["device4"] == "" && options["device5"] == "")
-				{
-					PutModule("Error: no devices are set");
-					return;
-				}
-
-				service_host = "api.iglooirc.com";
-				service_url = "/znc/push";
-
-				params["network"] = network->GetName();
-				params["channel"] = context;
-				params["message"] = message;
-				params["nick"] = network->GetNick();
-				params["sender"] = nick.GetNick();
-				params["type"] = type;
-				//params["developer"] = "true";
-
-				params["device1"] = options["device1"];
-				params["device2"] = options["device2"];
-				params["device3"] = options["device3"];
-				params["device4"] = options["device4"];
-				params["device5"] = options["device5"];
-			}
-			else if (service == "supertoasty")
-			{
-				if (options["secret"] == "")
-				{
-					PutModule("Error: secret (device id) not set");
-					return;
-				}
-
-				use_post = false;
-				use_port = 80;
-				use_ssl = false;
-
-				service_host = "api.supertoasty.com";
-				service_url = "/notify/"+options["secret"];
-
-				params["title"] = message_title;
-				params["text"] = message_content;
-				params["image"] = "https://raw2.github.com/jreese/znc-push/master/logo.png";
-				params["sender"] = "ZNC Push";
-			}
-			else if (service == "faast")
-			{
-				if (options["secret"] == "")
-				{
-					PutModule("Error: secret not set to apikey");
-					return;
-				}
-
-				service_host = "www.appnotifications.com";
-				service_url = "/account/notifications.json";
-
-				params["user_credentials"] = options["secret"];
-				params["notification[title]"] = message_title;
-				params["notification[subtitle]"] = context;
-				params["notification[message]"] = message_content;
-				params["notification[long_message]"] = message_content;
-				params["notification[icon_url]"] = "https://raw2.github.com/jreese/znc-push/master/logo.png";
-				if ( options["message_sound"] != "" )
-				{
-					params["notification[sound]"] = options["message_sound"];
-				}
-				if ( options["message_uri"] != "" )
-				{
-					params["notification[run_command]"] = options["message_uri"];
-				}
-			}
-			else if (service == "nexmo")
-			{
-				if (options["username"] == "")
-				{
-					PutModule("Error: username (api key) not set");
-					return;
-				}
-				if (options["secret"] == "")
-				{
-					PutModule("Error: secret (api secret) not set");
-					return;
-				}
-				if (options["target"] == "")
-				{
-					PutModule("Error: destination mobile number (in international format) not set");
-					return;
-				}
-
-				service_host = "rest.nexmo.com";
-				service_url = "/sms/json";
-
-				params["api_secret"] = options["secret"];
-				params["api_key"] = options["username"];
-				params["from"] = message_title;
-				params["to"] = options["target"];
-				params["text"] = message_content;
-			}
-			else if (service == "url")
-			{
-				if (options["message_uri"] == "")
-				{
-					PutModule("Error: message_uri not set");
-					return;
-				}
-
-				CString::size_type count;
-				VCString parts;
-				CString url = options["message_uri"];
-
-				// Verify that the URL begins with either http:// or https://
-				count = url.Split("://", parts, false);
-
-				if (count != 2)
-				{
-					PutModule("Error: invalid url format");
-					return;
-				}
-
-				if(options["message_uri_post"] != "yes")
-				{
-					use_post = false;
-				}
-
-				if (parts[0] == "https")
-				{
-					use_ssl = true;
-					use_port = 443;
-				}
-				else if (parts[0] == "http")
-				{
-					use_ssl = false;
-					use_port = 80;
-				}
-				else
-				{
-					PutModule("Error: invalid url schema");
-					return;
-				}
-
-				// HTTP basic auth
-				if(options["username"] != "" || options["secret"] != "")
-				{
-					service_auth = options["username"] + CString(":") + options["secret"];
-				}
-
-				// Process the remaining portion of the URL
-				url = parts[1];
-
-				// Split out the host and optional port number; this breaks with raw IPv6 addresses
-				CString host = url.Token(0, false, "/");
-				count = host.Split(":", parts, false);
-
-				if (count > 1)
-				{
-					use_port = parts[1].ToInt();
-				}
-
-				service_host = parts[0];
-
-				// Split remaining URL into path and query components
-				url = "/" + url.Token(1, true, "/");
-				service_url = expand(url.Token(0, false, "?"), replace);
-
-				// Parse and expand query parameter values
-				url = url.Token(1, true, "?");
-				url.URLSplit(params);
-
-				for (MCString::iterator i = params.begin(); i != params.end(); i++) {
-					i->second = expand(i->second, replace);
-				}
-			}
-			else if (service == "airgram")
-			{
-				PutModule("Error: Airgram service shut down. Please configure another notification provider.");
-			}
-			else if (service == "slack")
-			{
-				if (options["secret"] == "")
-				{
-					PutModule("Error: secret (from webhook, e.g. T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX) not set");
-					return;
-				}
-				if (options["target"] == "")
-				{
-					PutModule("Error: target (channel or username) not set");
-					return;
-				}
-
-				service_host = "hooks.slack.com";
-				service_url = "/services/" + options["secret"];
-
-				if (options["username"] != "")
-				{
-					params["username"] = options["username"];
-				}
-
-				params["payload"] = expand("{\"channel\": \"{target}\", \"text\": \"*{title}*: {message}\"}", replace);
-			}
-            else if (service == "discord")
-			{
-				if (options["secret"] == "")
-				{
-					PutModule("Error: secret (from webhook, e.g. 111111111111111111/abcdefghijklmopqrstuvwxyz1234567890-ABCDEFGHIJKLMNOPQRSTUVWXYZ123456) not set");
-					return;
-				}
-
-				service_host = "discordapp.com";
-				service_url = "/api/webhooks/" + options["secret"];
-
-				if (options["username"] != "")
-				{
-					params["username"] = options["username"];
-				}
-
-				params["content"] = message_content;
-
-			}
-			else if (service == "pushjet")
-			{
-				if (options["secret"] == "")
-				{
-					PutModule("Error: secret (service key) not set");
-					return;
-				}
-
-				service_host = "api.pushjet.io";
-				service_url = "/message";
-
-				params["secret"] = options["secret"];
-				params["title"] = message_title;
-				params["message"] = message_content;
-
-				if (message_uri != "")
-				{
-					params["link"] = message_uri;
-				}
-
-				if (options["message_priority"] != "")
-				{
-					params["level"] = options["message_priority"];
-				}
-			}
-			else if (service == "telegram")
-			{
-				if ((options["secret"] == "") || (options["target"] ==""))
-				{
-					PutModule("Error: secret (API key) or target (chat_id) not set");
-					return;
-				}
-
-				service_host = "api.telegram.org";
-				service_url = "/bot" + options["secret"] + "/sendMessage";
-
-				params["chat_id"] = options["target"];
-				params["text"] = message_content;
-				if (options["message_escape"] == "HTML") {
-					params["parse_mode"] = "HTML";
-				}
-			}
-			else
-			{
-				PutModule("Error: service type not selected");
+				PutModule("Error: no devices are set");
 				return;
 			}
+
+			service_host = "api.iglooirc.com";
+			service_url = "/znc/push";
+
+			params["network"] = network->GetName();
+			params["channel"] = context;
+			params["message"] = message;
+			params["nick"] = network->GetNick();
+			params["sender"] = nick.GetNick();
+			params["type"] = type;
+			//params["developer"] = "true";
+
+			params["device1"] = options["device1"];
+			params["device2"] = options["device2"];
+			params["device3"] = options["device3"];
+			params["device4"] = options["device4"];
+			params["device5"] = options["device5"];
 #ifdef USE_CURL
 			long http_code = make_curl_request(service_host, service_url, service_auth, params, use_port, use_ssl, use_post, options["proxy"], options["proxy_ssl_verify"] != "no", false);
 			if (!(http_code >= 200 && http_code < 300)) {
@@ -1461,84 +1003,6 @@ class CPushMod : public CModule
 							eval(value);
 						}
 					}
-					else if (option == "service")
-					{
-						value.MakeLower();
-
-						if (value == "pushbullet")
-						{
-							PutModule("Note: Pushbullet requires setting both 'target' (to device id) and 'secret' (to api key) options");
-						}
-						else if (value == "boxcar")
-						{
-							PutModule("Note: Boxcar requires setting the 'username' option");
-						}
-						else if (value == "boxcar2")
-						{
-							PutModule("Note: Boxcar 2 requires setting the 'secret' option");
-						}
-						else if (value == "nma")
-						{
-							PutModule("Note: NMA requires setting the 'secret' option");
-						}
-						else if (value == "pushover")
-						{
-							PutModule("Note: Pushover requires setting both the 'username' (to user key) and the 'secret' (to application api key) option");
-						}
-						else if (value == "pushsafer")
-						{
-							PutModule("Note: Pushsafer requires setting the 'private or alias key' option");
-						}
-						else if (value == "pushalot")
-						{
-							PutModule("Note: Pushalot requires setting the 'secret' (to user key) (to authorization token) option");
-						}
-						else if (value == "prowl")
-						{
-							PutModule("Note: Prowl requires setting the 'secret' option");
-						}
-						else if (value == "igloo")
-						{
-							PutModule("Note: Igloo requires adding your devices with device1-5");
-						}
-						else if (value == "supertoasty")
-						{
-							PutModule("Note: Supertoasty requires setting the 'secret' option with device id");
-						}
-						else if (value == "url")
-						{
-							PutModule("Note: URL requires setting the 'message_uri' option with the full URL");
-						}
-						else if (value == "faast")
-						{
-							PutModule("Note: Faast requires setting the secret to your apikey");
-						}
-						else if (value == "nexmo")
-						{
-							PutModule("Note: Nexmo requires setting the 'username' (to api key), 'secret' (to api secret), 'message_title' (to sender number in international format), and 'target' (to destination number in international format) options");
-						}
-						else if (value == "slack")
-						{
-							PutModule("Note: Slack requires setting 'secret' (from webhook) and 'target' (channel or username), optional 'username' (bot name)");
-						}
-						else if (value == "discord")
-						{
-							PutModule("Note: Discord requires setting 'secret' (from webhook), optional 'username' (bot name)");
-						}
-						else if (value == "pushjet")
-						{
-							PutModule("Note: Pushjet requires setting 'secret' (service key) option");
-						}
-						else if (value == "telegram")
-						{
-							PutModule("Note: Telegram requires setting both the 'secret' (api key) and 'target' (chat_id)");
-						}
-						else
-						{
-							PutModule("Error: unknown service name");
-							return;
-						}
-					}
 
 					options[option] = value;
 					SetNV(option, options[option]);
@@ -1562,10 +1026,6 @@ class CPushMod : public CModule
 				if (pos == options.end())
 				{
 					PutModule("Error: invalid option name");
-				}
-				else if (option == "service")
-				{
-					PutModule("Error: cannot append to this option");
 				}
 				else
 				{
@@ -1592,10 +1052,6 @@ class CPushMod : public CModule
 				if (pos == options.end())
 				{
 					PutModule("Error: invalid option name");
-				}
-				else if (option == "service")
-				{
-					PutModule("Error: cannot prepend to this option");
 				}
 				else
 				{
@@ -1822,7 +1278,6 @@ class CPushMod : public CModule
 			else if (action == "subscribe")
 			{
 				// Set up the connection profile
-				CString service = options["service"];
 				bool use_post = true;
 				int use_port = 443;
 				bool use_ssl = true;
@@ -1830,31 +1285,6 @@ class CPushMod : public CModule
 				CString service_url;
 				CString service_auth;
 				MCString params;
-
-				if (service == "boxcar")
-				{
-					if (options["username"] == "")
-					{
-						PutModule("Error: username not set");
-						return;
-					}
-
-					CString boxcar_api_key = "puSd2qp2gCDZO7nWkvb9";
-
-					service_host = "boxcar.io";
-					service_url = "/devices/providers/" + boxcar_api_key + "/notifications/subscribe";
-
-					params["email"] = options["username"];
-				}
-				else if (service == "airgram")
-				{
-					PutModule("Error: Airgram service shut down. Please configure a different notification provider.");
-				}
-				else
-				{
-					PutModule("Error: service does not support subscribe command");
-					return;
-				}
 
 #ifdef USE_CURL
 				long http_code = make_curl_request(service_host, service_url, service_auth, params, use_port, use_ssl, use_post, options["proxy"], options["proxy_ssl_verify"] != "no", false);
