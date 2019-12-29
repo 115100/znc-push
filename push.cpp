@@ -168,28 +168,12 @@ class CPushMod : public CModule
 			// Advanced
 			defaults["channel_conditions"] = "all";
 			defaults["query_conditions"] = "all";
-			defaults["debug"] = "off";
 		}
 
 		virtual ~CPushMod() {
 #ifdef USE_CURL
 			curl_global_cleanup();
 #endif
-		}
-
-	public:
-
-		/**
-		 * Debugging messages.  Prints to *push when the debug option is enabled.
-		 *
-		 * @param data Debug message
-		 */
-		void PutDebug(const CString& data)
-		{
-			if (options["debug"] == "on")
-			{
-				PutModule(data);
-			}
 		}
 
 	protected:
@@ -709,8 +693,6 @@ class CPushMod : public CModule
 				}
 
 				params["payload"] = expand("{\"channel\": \"{target}\", \"text\": \"*{title}*: {message}\"}", replace);
-
-				PutDebug("payload: " + params["payload"]);
 			}
             else if (service == "discord")
 			{
@@ -778,24 +760,12 @@ class CPushMod : public CModule
 				PutModule("Error: service type not selected");
 				return;
 			}
-
-			PutDebug("service: " + service);
-			PutDebug("service_host: " + service_host);
-			PutDebug("service_url: " + service_url);
-			PutDebug("service_auth: " + service_auth);
-			PutDebug("use_port: " + CString(use_port));
-			PutDebug("use_ssl: " + CString(use_ssl ? 1 : 0));
-			PutDebug("use_post: " + CString(use_post ? 1 : 0));
-
 #ifdef USE_CURL
-			PutDebug("using libcurl");
-			long http_code = make_curl_request(service_host, service_url, service_auth, params, use_port, use_ssl, use_post, options["proxy"], options["proxy_ssl_verify"] != "no", options["debug"] == "on");
-			PutDebug("curl: HTTP status code " + CString(http_code));
+			long http_code = make_curl_request(service_host, service_url, service_auth, params, use_port, use_ssl, use_post, options["proxy"], options["proxy_ssl_verify"] != "no", false);
 			if (!(http_code >= 200 && http_code < 300)) {
 				PutModule("Error: HTTP status code " + CString(http_code));
 			}
 #else
-			PutDebug("NOT using libcurl");
 			// Create the socket connection, write to it, and add it to the queue
 			CPushSocket *sock = new CPushSocket(this);
 			sock->Connect(service_host, use_port, use_ssl);
@@ -824,7 +794,6 @@ class CPushMod : public CModule
 			VCString tokens;
 			padded.Split(" ", tokens, false);
 
-			PutDebug("Evaluating message: <" + nick.GetNick() + "> " + message);
 			bool result = eval_tokens(tokens.begin(), tokens.end(), context, nick, message);
 
 			return result;
@@ -888,7 +857,6 @@ class CPushMod : public CModule
 				else if (token == ")")
 				{
 					pos++;
-					PutDebug(dbg);
 					return value;
 				}
 				else if (token == "and")
@@ -921,7 +889,6 @@ class CPushMod : public CModule
 				}
 			}
 
-			PutDebug(dbg);
 			return value;
 		}
 
@@ -1890,8 +1857,7 @@ class CPushMod : public CModule
 				}
 
 #ifdef USE_CURL
-				long http_code = make_curl_request(service_host, service_url, service_auth, params, use_port, use_ssl, use_post, options["proxy"], options["proxy_ssl_verify"] != "no", options["debug"] == "on");
-				PutDebug("curl: HTTP status code " + CString(http_code));
+				long http_code = make_curl_request(service_host, service_url, service_auth, params, use_port, use_ssl, use_post, options["proxy"], options["proxy_ssl_verify"] != "no", false);
 				if (!(http_code >= 200 && http_code < 300)) {
 					PutModule("Error: HTTP status code " + CString(http_code));
 				}
@@ -2059,8 +2025,6 @@ long make_curl_request(const CString& service_host, const CString& service_url,
  */
 void CPushSocket::Request(bool post, const CString& host, const CString& url, MCString& parameters, const CString& auth)
 {
-	parent->PutDebug("Building notification to " + host + url + "...");
-
 	CString query = build_query_string(parameters);
 
 	// Request headers and POST body
@@ -2080,13 +2044,11 @@ void CPushSocket::Request(bool post, const CString& host, const CString& url, MC
 	request += "Host: " + host + crlf;
 	request += "Connection: close" + crlf;
 	request += "User-Agent: " + user_agent + crlf;
-	parent->PutDebug("User-Agent: " + user_agent);
 
 	if (auth != "")
 	{
 		CString auth_b64 = auth.Base64Encode_n();
 		request += "Authorization: Basic " + auth_b64 + crlf;
-		parent->PutDebug("Authorization: Basic " + auth_b64);
 	}
 
 	request += crlf;
@@ -2096,10 +2058,8 @@ void CPushSocket::Request(bool post, const CString& host, const CString& url, MC
 		request += query;
 	}
 
-	parent->PutDebug("Query string: " + query);
 
 	Write(request);
-	parent->PutDebug("Request sending");
 }
 
 /**
@@ -2112,19 +2072,12 @@ void CPushSocket::ReadLine(const CString& data)
 		CString status = data.Token(1);
 		CString message = data.Token(2, true);
 
-		parent->PutDebug("Status: " + status);
-		parent->PutDebug("Message: " + message);
 		first = false;
-	}
-	else
-	{
-		parent->PutDebug("Data: " + data);
 	}
 }
 
 void CPushSocket::Disconnected()
 {
-	parent->PutDebug("Disconnected.");
 	Close(CSocket::CLT_AFTERWRITE);
 }
 #endif // USE_CURL
