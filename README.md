@@ -11,21 +11,7 @@ ZNC Push is a module for [ZNC][] that will send notifications to multiple push n
 services, or SMS for any private message or channel highlight that matches a configurable set of
 conditions.  ZNC Push current supports the following services:
 
-* [Boxcar][]
-* [Boxcar 2][]
-* [Pushover][]
-* [Pushsafer][]
-* [Prowl][]
-* [Supertoasty][]
-* [PushBullet][]
-* [Faast][]
-* [Nexmo][]
-* [Pushalot][]
-* [Pushjet][]
-* [Telegram][]
-* [Slack][]
-* [Discord][]
-* Custom URL GET requests
+* [Igloo][]
 
 This project is still a Work In Progress, but should be functional enough and stable enough
 for everyday usage.  Users are more than welcome to submit feature requests or patches for
@@ -57,15 +43,7 @@ In order for this plugin to properly work, you will need to ensure you have the 
 package on Ubuntu based systems. This is required for push to properly verify the certificate
 of the service it's sending your message to.
 
-    $ sudo aptitude install ca-certificates
-
-Optionally, if you want to use libcurl for http requests, you also need to install cURL
-development header files.
-
-On Ubuntu, development headers can be installed by installing `libcurl3-dev` or
-`libcurl4-openssl-dev` package:
-
-    $ sudo aptitude install libcurl4-openssl-dev
+    $ sudo aptitude install ca-certificates libcurl4-openssl-dev
 
 
 Compiling
@@ -78,22 +56,6 @@ If you have `make` installed, you can compile the module with:
 Otherwise, run the full command:
 
     $ znc-buildmod push.cpp
-
-
-### Advanced
-
-If you would like to compile ZNC Push using libcurl for http requests, you must use:
-
-    $ make curl=yes
-
-If libcurl is not in the default system library paths, you will need to populate `$CXXFLAGS`
-with the appropriate GCC flags so that it can find and link ZNC Push with libcurl.
-
-Note: You are strongly encouraged to use libcurl transport. The reason for that is, that
-the default CSocket transport doesn't verify server's SSL certificate which leaves you
-vulnerable to MITM attacks.  However, use of libcurl will *block* the main ZNC thread at every
-push notification; for installations with many users, libcurl is *not* yet ideal, even with
-the above security concerns in mind.
 
 
 Installation
@@ -116,29 +78,14 @@ If you prefer to use ZNC's "controlpanel" module, you may do so like this:
     /msg *status loadmod controlpanel
     /msg *controlpanel loadmod push
 
-Then select the push service you want to use, and set your username and secret as needed.
-The secret is not your password, and can be obtained by logging into the service's website
-and looking in your profile or settings:
+Then set your device token.
 
-    /msg *push set service pushover
-    /msg *push set username foo
-    /msg *push set secret ...
-
-If you're using Boxcar, you need to use the following command to send a subscription request
-to your account, before ZNC Push can start working:
-
-    /msg *push subscribe
+    /msg *push set device1 footoken
+    /msg *push set device2 ...
 
 At this point, it should start sending notifications every time you get a private message
 or someone says your name in a channel.  If this is everything you wanted, congratulations,
 you're done!
-
-For further, detailed instructions specific to each push notification service, the following
-documentation is available:
-
-*   [Pushover](doc/pushover.md)
-*   [Telegram](doc/telegram.md)
-
 
 Commands
 --------
@@ -187,12 +134,6 @@ Commands
     Check the status of current conditions.  Specifying the "context" of either a channel
     or nick name will provide status values specific to that context.
 
-*   `subscribe`
-
-    Send a subscription request for the selected service to your configured account.  This
-    is required by certain services, such as Boxcar, before ZNC Push can send any messages
-    to your account.
-
 *   `send <message>`
 
     Manually trigger a notification with the given message.  Useful for testing to validate
@@ -234,59 +175,11 @@ to something similar to "http://domain/#channel/2011-03-09 14:25:09", or
 
 ### Push Services
 
-*   `service` Default: ` `
+*   `device{1,2,3,4,5}` Default: ` `
 
-    Short name for the push notification service that you want to use.  Must be set before
-    ZNC Push can send any notifications.
+    Device token to receive push notifications.
 
-    Possible values include:
-
-    *   `boxcar`
-    *   `pushover`
-    *   `pushsafer`
-    *   `prowl`
-    *   `supertoasty`
-    *   `pushbullet`
-    *   `nexmo`
-    *   `pushjet`
-    *   `telegram`
-    *   `slack`
-    *   `discord`
-    *   `url`
-
-*   `username` Default: ` `
-
-    User account that should receive push notifications.
-
-    This option must be set when using Boxcar or Pushover. For Nexmo, this is the service/api key.
-
-    When using the custom URL service, if this option is set it will enable HTTP basic
-    authentication and be used as username.
-
-*   `secret` Default: ` `
-
-    Authentication token for push notifications.
-
-    This option must be set when using Notify My Android, Pushover, Pushsafer, Prowl, Supertoasty, PushBullet, Nexmo, Pushjet, or Telegram.
-
-    When using the custom URL service, if this option is set it will enable HTTP basic
-    authentication and be used as password.
-
-*   `target` Default: ` `
-
-    Device or target name for push notifications.
-
-    When using Pushover or PushBullet, this option allows you to specify a
-    single device to send notifications to; if blank or unset, notifications
-    will be sent to all devices. For Pushover, this is the device name; for
-    PushBullet, this is the device_iden.
-
-    When using Nexmo, this option allows you to specify the SMS destination
-    number. The number must be in international format.
-
-    When using Telegram, this is the id of the chat that receives the message.
-	
-    When using Pushsafer, this is the id or group id of your devices.
+    This option must be set for at least one device.
 
 
 ### Notifications
@@ -333,20 +226,6 @@ to something similar to "http://domain/#channel/2011-03-09 14:25:09", or
 
     When using the custom URL service, this option allows you to specify whether to use the
     POST method instead of GET.
-
-*   `message_uri_title` Default: ` `
-
-    If you're using Pushover.net or Pushsafer.com, you can specify a title for the `message_uri` option.
-
-*   `message_priority` Default: ` `
-
-    Priority level that will be used for the push notification.
-    Currently supported only by Pushover.net, Notify My Android and Pushjet.
-
-*   `message_sound` Default: ` `
-
-    Notification sound to play with the push notification.
-    Supported under Pushover, Pushsafer, Faast, and Boxcar 2. Must be chosen from the list of [Pushover sounds](https://pushover.net/api#sounds), [Pushsafer sounds](https://www.pushsafer.com/en/pushapi), [Faast sounds](http://developer.faast.io/) or [Boxcar 2 sounds](https://boxcar.uservoice.com/knowledgebase/articles/306788-how-to-send-your-boxcar-account-a-notification).
 
 
 ### Conditions
@@ -462,8 +341,8 @@ to something similar to "http://domain/#channel/2011-03-09 14:25:09", or
 
 *   `proxy` Default: none
 
-    This option allows using a proxy service when libcurl support is enabled. The default
-    is no proxy. You must specify both the hostname/IP address and the port, as follows:
+    This option allows using a proxy service. The default is no proxy.
+    You must specify both the hostname/IP address and the port, as follows:
 
     * myproxy.example.com:8080
     * 203.0.113.5:8421
@@ -474,7 +353,7 @@ to something similar to "http://domain/#channel/2011-03-09 14:25:09", or
     This option allows you to disable SSL verification when using a proxy service. This
     should only be done when you know the proxy service does not transparently pass SSL
     connections through and you trust the proxy service. Set this to `no` to disable
-    SSL validation in libcurl.
+    SSL validation.
 
 
 ### Advanced
@@ -534,21 +413,6 @@ Because this is my personal repository, the license you receive to my code is
 from me and not from my employer.  See the `LICENSE` file for details.
 
 
-
-[Boxcar]: http://boxcar.io
-[Boxcar 2]: http://boxcar.io
-[Pushover]: http://pushover.net
-[Pushsafer]: http://www.pushsafer.com
-[Prowl]: http://www.prowlapp.com
-[Supertoasty]: http://www.supertoasty.com
-[PushBullet]: https://www.pushbullet.com/
-[Faast]: http://faast.io/
-[Nexmo]: https://www.nexmo.com
-[Pushalot]: https://pushalot.com/
-[Pushjet]: http://pushjet.io
-[Telegram]: https://telegram.org/
-[Slack]: https://slack.com/
-[Discord]: https://discord.gg
 
 [faq]: https://github.com/jreese/znc-push/blob/master/doc/faq.md
 [examples]: https://github.com/jreese/znc-push/blob/master/doc/examples.md
