@@ -126,10 +126,17 @@ class CPushMod : public CModule
 			user = GetUser();
 
 			// Push service information
-			defaults["service"] = "";
+			defaults["service"] = "igloo";
 			defaults["username"] = "";
 			defaults["secret"] = "";
 			defaults["target"] = "";
+
+			// Igloo Devices
+			defaults["device1"] = "";
+			defaults["device2"] = "";
+			defaults["device3"] = "";
+			defaults["device4"] = "";
+			defaults["device5"] = "";
 
 			// Notification settings
 			defaults["message_content"] = "{context}: [{nick}] {message}";
@@ -229,7 +236,7 @@ class CPushMod : public CModule
 		 * @param title Message title to use
 		 * @param context Channel or nick context
 		 */
-		void send_message(const CString& message, const CString& title="New Message", const CString& context="*push", const CNick& nick=CString("*push"))
+		void send_message(const CString& message, const CString& title="New Message", const CString& context="*push", const CNick& nick=CString("*push"), const CString& type="")
 		{
 			// Set the last notification time
 			last_notification_time[context] = time(NULL);
@@ -482,6 +489,31 @@ class CPushMod : public CModule
 				params["event"] = message_title;
 				params["description"] = message_content;
 				params["url"] = message_uri;
+			}
+			else if (service == "igloo")
+			{
+				if (options["device1"] == "" && options["device2"] == "" && options["device3"] == "" && options["device4"] == "" && options["device5"] == "")
+				{
+					PutModule("Error: no devices are set");
+					return;
+				}
+
+				service_host = "api.iglooirc.com";
+				service_url = "/znc/push";
+
+				params["network"] = network->GetName();
+				params["channel"] = context;
+				params["message"] = message;
+				params["nick"] = network->GetNick();
+				params["sender"] = nick.GetNick();
+				params["type"] = type;
+				//params["developer"] = "true";
+
+				params["device1"] = options["device1"];
+				params["device2"] = options["device2"];
+				params["device3"] = options["device3"];
+				params["device4"] = options["device4"];
+				params["device5"] = options["device5"];
 			}
 			else if (service == "supertoasty")
 			{
@@ -1234,7 +1266,7 @@ class CPushMod : public CModule
 			{
 				CString title = "Highlight";
 
-				send_message(message, title, channel.GetName(), nick);
+				send_message(message, title, channel.GetName(), nick, "action");
 			}
 
 			return CONTINUE;
@@ -1253,7 +1285,7 @@ class CPushMod : public CModule
 			{
 				CString title = "Channel Notice";
 
-				send_message(message, title, channel.GetName(), nick);
+				send_message(message, title, channel.GetName(), nick, "notice");
 			}
 
 			return CONTINUE;
@@ -1289,7 +1321,7 @@ class CPushMod : public CModule
 			{
 				CString title = "Private Message";
 
-				send_message(message, title, nick.GetNick(), nick);
+				send_message(message, title, nick.GetNick(), nick, "action");
 			}
 
 			return CONTINUE;
@@ -1307,7 +1339,7 @@ class CPushMod : public CModule
 			{
 				CString title = "Private Notice";
 
-				send_message(message, title, nick.GetNick(), nick);
+				send_message(message, title, nick.GetNick(), nick, "notice");
 			}
 
 			return CONTINUE;
@@ -1472,6 +1504,10 @@ class CPushMod : public CModule
 						else if (value == "prowl")
 						{
 							PutModule("Note: Prowl requires setting the 'secret' option");
+						}
+						else if (value == "igloo")
+						{
+							PutModule("Note: Igloo requires adding your devices with device1-5");
 						}
 						else if (value == "supertoasty")
 						{
